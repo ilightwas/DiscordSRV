@@ -109,6 +109,7 @@ tasks {
             exclude(dependency("com.fasterxml.jackson.core:jackson-databind:.*"))
         }
 
+        relocate("io.github.ilightwas.proxysrv", "github.scarsz.discordsrv.dependencies.proxysrv")
         relocate("net.dv8tion.jda", "github.scarsz.discordsrv.dependencies.jda")
         relocate("com.iwebpp.crypto", "github.scarsz.discordsrv.dependencies.iwebpp.crypto")
         relocate("com.vdurmont.emoji", "github.scarsz.discordsrv.dependencies.emoji")
@@ -180,13 +181,16 @@ repositories {
     mavenLocal()
     mavenCentral()
     maven("https://hub.spigotmc.org/nexus/content/repositories/snapshots/")
-    maven("https://papermc.io/repo/repository/maven-public/")
+    maven("https://repo.papermc.io/repository/maven-public/")
     maven("https://oss.sonatype.org/content/repositories/snapshots")
     maven("https://s01.oss.sonatype.org/content/repositories/snapshots")
     maven("https://nexus.scarsz.me/content/groups/public/")
 }
 
 dependencies {
+
+    implementation("io.github.ilightwas:proxySRV:1.0.0-SNAPSHOT")
+
     // Paper API
     compileOnly("io.papermc.paper:paper-api:${minecraftVersion}-R0.1-SNAPSHOT") {
         exclude("commons-lang") // Exclude lang in favor of our own lang3

@@ -37,7 +37,7 @@ import java.util.regex.Pattern;
 
 public class NMSUtil {
 
-    private static final Pattern TEXTURE_URL_PATTERN = Pattern.compile("https?://.+?(?<texture>\\w{60,64})\"");
+    public static final Pattern TEXTURE_URL_PATTERN = Pattern.compile("https?://.+?(?<texture>\\w{60,64})\"");
 
     protected static String versionPrefix = "";
     protected static boolean failed = false;

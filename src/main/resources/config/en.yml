@@ -38,6 +38,9 @@ DiscordInviteLink: "https://discord.gg/changethisintheconfig.yml"
 # Experiments
 # These features are not fully optimized; use at your own risk
 
+# Network proxy join
+Experiment_NetworkJoinLeaveMessages: true
+
 # JDBC (MySQL/MariaDB)
 Experiment_JdbcAccountLinkBackend: "jdbc:mysql://HOST:PORT/DATABASE?autoReconnect=true&useSSL=false"
 Experiment_JdbcTablePrefix: "discordsrv"

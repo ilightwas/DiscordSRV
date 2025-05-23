@@ -1098,7 +1098,12 @@ public class DiscordSRV extends JavaPlugin {
         // register events
         new PlayerBanListener();
         new PlayerDeathListener();
-        new PlayerJoinLeaveListener();
+
+        if(config().getBoolean("Experiment_NetworkJoinLeaveMessages"))
+            new NetworkJoinLeaveListener();
+        else 
+            new PlayerJoinLeaveListener();
+        
         try {
             Class.forName("org.bukkit.event.player.PlayerAdvancementDoneEvent");
             new PlayerAdvancementDoneListener();
@@ -1966,6 +1971,60 @@ public class DiscordSRV extends JavaPlugin {
         }
     }
 
+     public void sendJoinMessage(String playerName, UUID uuid, String joinMessage, String texture) {
+        MessageFormat messageFormat = getMessageFromConfiguration("MinecraftPlayerJoinMessage");
+
+        if (messageFormat == null || !messageFormat.isAnyContent()) {
+            debug("Not sending join message due to it being disabled");
+            return;
+        }
+
+        TextChannel textChannel = getOptionalTextChannel("join");
+        if (textChannel == null) {
+            DiscordSRV.debug("Not sending join message, text channel is null");
+            return;
+        }
+
+        final String displayName = StringUtils.isNotBlank(playerName) ? MessageUtil.strip(playerName) : "";
+        final String message = StringUtils.isNotBlank(joinMessage) ? joinMessage : "";
+        final String name = playerName;
+
+        String avatarUrl = getAvatarUrl(playerName, uuid, texture);
+        final String botAvatarUrl = DiscordUtil.getJda().getSelfUser().getEffectiveAvatarUrl();
+        String botName = getMainGuild() != null ? getMainGuild().getSelfMember().getEffectiveName() : DiscordUtil.getJda().getSelfUser().getName();
+
+        BiFunction<String, Boolean, String> translator = (content, needsEscape) -> {
+            if (content == null) return null;
+            content = content
+                    .replaceAll("%time%|%date%", TimeUtil.timeStamp())
+                    .replace("%message%", MessageUtil.strip(needsEscape ? DiscordUtil.escapeMarkdown(message) : message))
+                    .replace("%username%", needsEscape ? DiscordUtil.escapeMarkdown(name) : name)
+                    .replace("%displayname%", needsEscape ? DiscordUtil.escapeMarkdown(displayName) : displayName)
+                    .replace("%usernamenoescapes%", name)
+                    .replace("%displaynamenoescapes%", displayName)
+                    .replace("%embedavatarurl%", avatarUrl)
+                    .replace("%botavatarurl%", botAvatarUrl)
+                    .replace("%botname%", botName);
+            content = DiscordUtil.translateEmotes(content, textChannel.getGuild());
+            OfflinePlayer offlinePlayer = Bukkit.getOfflinePlayer(uuid);
+            content = PlaceholderUtil.replacePlaceholdersToDiscord(content, offlinePlayer);
+            return content;
+        };
+
+        Message discordMessage = translateMessage(messageFormat, translator);
+        if (discordMessage == null) return;
+
+        String webhookName = translator.apply(messageFormat.getWebhookName(), false);
+        String webhookAvatarUrl = translator.apply(messageFormat.getWebhookAvatarUrl(), false);
+
+        if (messageFormat.isUseWebhooks()) {
+            WebhookUtil.deliverMessage(textChannel, webhookName, webhookAvatarUrl,
+                    discordMessage.getContentRaw(), discordMessage.getEmbeds().stream().findFirst().orElse(null));
+        } else {
+            DiscordUtil.queueMessage(textChannel, discordMessage, true);
+        }
+    }
+
     /**
      * Triggers a leave message for the given player to be sent to Discord. Useful for fake leave messages.
      *
@@ -2027,6 +2086,60 @@ public class DiscordSRV extends JavaPlugin {
         }
     }
 
+    public void sendLeaveMessage(String playerName, UUID uuid, String quitMessage, String texture) {
+        MessageFormat messageFormat = getMessageFromConfiguration("MinecraftPlayerLeaveMessage");
+        if (messageFormat == null || !messageFormat.isAnyContent()) {
+            debug("Not sending leave message due to it being disabled");
+            return;
+        }
+
+        TextChannel textChannel = getOptionalTextChannel("leave");
+        if (textChannel == null) {
+            DiscordSRV.debug("Not sending quit message, text channel is null");
+            return;
+        }
+
+        final String displayName = StringUtils.isNotBlank(playerName) ? MessageUtil.strip(playerName) : "";
+        final String message = StringUtils.isNotBlank(quitMessage) ? quitMessage : "";
+        final String name = playerName;
+
+        String avatarUrl = getAvatarUrl(playerName, uuid, texture);
+        String botAvatarUrl = DiscordUtil.getJda().getSelfUser().getEffectiveAvatarUrl();
+        String botName = getMainGuild() != null ? getMainGuild().getSelfMember().getEffectiveName() : DiscordUtil.getJda().getSelfUser().getName();
+
+        BiFunction<String, Boolean, String> translator = (content, needsEscape) -> {
+            if (content == null) return null;
+            content = content
+                    .replaceAll("%time%|%date%", TimeUtil.timeStamp())
+                    .replace("%message%", MessageUtil.strip(needsEscape ? DiscordUtil.escapeMarkdown(message) : message))
+                    .replace("%username%", MessageUtil.strip(needsEscape ? DiscordUtil.escapeMarkdown(name) : name))
+                    .replace("%displayname%", needsEscape ? DiscordUtil.escapeMarkdown(displayName) : displayName)
+                    .replace("%usernamenoescapes%", name)
+                    .replace("%displaynamenoescapes%", displayName)
+                    .replace("%embedavatarurl%", avatarUrl)
+                    .replace("%botavatarurl%", botAvatarUrl)
+                    .replace("%botname%", botName);
+            content = DiscordUtil.translateEmotes(content, textChannel.getGuild());
+            OfflinePlayer offlinePlayer = Bukkit.getOfflinePlayer(uuid);
+
+            content = PlaceholderUtil.replacePlaceholdersToDiscord(content, offlinePlayer);
+            return content;
+        };
+
+        Message discordMessage = translateMessage(messageFormat, translator);
+        if (discordMessage == null) return;
+
+        String webhookName = translator.apply(messageFormat.getWebhookName(), false);
+        String webhookAvatarUrl = translator.apply(messageFormat.getWebhookAvatarUrl(), false);
+
+        if (messageFormat.isUseWebhooks()) {
+            WebhookUtil.deliverMessage(textChannel, webhookName, webhookAvatarUrl,
+                    discordMessage.getContentRaw(), discordMessage.getEmbeds().stream().findFirst().orElse(null));
+        } else {
+            DiscordUtil.queueMessage(textChannel, discordMessage, true);
+        }
+    }
+  
     public MessageFormat getMessageFromConfiguration(String key) {
         return MessageFormatResolver.getMessageFromConfiguration(config(), key);
     }
@@ -2076,6 +2189,13 @@ public class DiscordSRV extends JavaPlugin {
         avatarUrl = PlaceholderUtil.replacePlaceholdersToDiscord(avatarUrl);
         return avatarUrl;
     }
+
+    public static String getAvatarUrl(String username, UUID uuid, String texture) {
+        String avatarUrl = constructAvatarUrl(username, uuid, texture);
+        avatarUrl = PlaceholderUtil.replacePlaceholdersToDiscord(avatarUrl);
+        return avatarUrl;
+    }
+
     private static String getAvatarUrl(OfflinePlayer player) {
         if (player.isOnline()) {
             return getAvatarUrl(player.getPlayer());
@@ -2111,7 +2231,9 @@ public class DiscordSRV extends JavaPlugin {
             texture = NMSUtil.getTexture(player.getPlayer());
         }
 
-        String avatarUrl = DiscordSRV.config().getString("AvatarUrl");
+        boolean isBedrock = username.startsWith(".");
+
+        String avatarUrl = isBedrock ? "https://mc-heads.net/avatar/{uuid}/{size}.png" : DiscordSRV.config().getString("AvatarUrl");
         String defaultUrl = "https://crafthead.net/helm/{uuid-nodashes}/{size}#{texture}";
         String offlineUrl = "https://crafthead.net/helm/{username}/{size}#{texture}";
 
@@ -2132,7 +2254,7 @@ public class DiscordSRV extends JavaPlugin {
             offlineUuidAvatarUrlNagged = true;
         }
 
-        if (username.startsWith("*")) {
+        if (username.startsWith(".")) {
             // geyser adds * to beginning of it's usernames
             username = username.substring(1);
         }
