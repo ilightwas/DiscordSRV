@@ -21,6 +21,7 @@
 package github.scarsz.discordsrv.listeners;
 
 import java.util.UUID;
+import java.util.function.Supplier;
 import java.util.regex.Matcher;
 
 import org.bukkit.Bukkit;
@@ -119,17 +120,23 @@ public class NetworkJoinLeaveListener implements Listener, PluginMessageListener
                 data.uuidMSB = in.readLong();
                 data.uuidLSB = in.readLong();
                 int length = in.readInt();
-                byte[] texture = new byte[length];
-                in.readFully(texture);
-                data.texture = texture;
+                if (length == 0) {
+                    data.texture = null;
+                } else {
+                    byte[] texture = new byte[length];
+                    in.readFully(texture);
+                    data.texture = texture;
+                }
             } catch (IllegalStateException ex) {
                 DiscordSRV.getPlugin().getLogger()
                         .warning("Something went wrong while reading data from proxySRV");
                 return;
             }
 
-            Matcher m = NMSUtil.TEXTURE_URL_PATTERN.matcher(new String(data.texture));
-            String texture = m.find() ? m.group("texture") : "";
+            String texture = data.texture == null ? "" : ((Supplier<String>) () -> {
+                Matcher m = NMSUtil.TEXTURE_URL_PATTERN.matcher(new String(data.texture));
+                return m.find() ? m.group("texture") : "";
+            }).get();
 
             if (data.proxyEvent == ProxyEvent.JOIN) {
                 DiscordSRV.getPlugin().sendJoinMessage(data.userName,
