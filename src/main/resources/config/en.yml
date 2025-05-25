@@ -74,6 +74,8 @@ NoopHostnameVerifier: false
 MaximumAttemptsForSystemDNSBeforeUsingFallbackDNS: 3
 TimestampFormat: EEE, d. MMM yyyy HH:mm:ss z
 DateFormat: yyyy-MM-dd
+# https://www.oracle.com/java/technologies/javase/jdk8-jre8-suported-locales.html
+DateTimeLocale: en-US
 # https://docs.discordsrv.com/config/#Timezone
 Timezone: default
 # MinecraftMentionSound: Whether a sound should be sent to the player in Minecraft when they are mentioned from Discord

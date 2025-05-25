@@ -24,6 +24,7 @@ import github.scarsz.discordsrv.DiscordSRV;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.Locale;
 import java.util.TimeZone;
 
 public class TimeUtil {
@@ -35,15 +36,30 @@ public class TimeUtil {
     private static final TimeZone zone;
 
     static {
-        timestampFormat = new SimpleDateFormat(DiscordSRV.config().getOptionalString("TimestampFormat").orElse("EEE, d. MMM yyyy HH:mm:ss z"));
-        dateFormat = new SimpleDateFormat(DiscordSRV.config().getOptionalString("DateFormat").orElse("yyyy-MM-dd"));
-        consoleTimeFormat = new SimpleDateFormat(DiscordSRV.config().getOptionalString("DiscordConsoleChannelTimestampFormat").orElse("EEE HH:mm:ss"));
+        Locale locale = getLocaleFromConfig();
+        timestampFormat = new SimpleDateFormat(DiscordSRV.config().getOptionalString("TimestampFormat").orElse("EEE, d. MMM yyyy HH:mm:ss z"), locale);
+        dateFormat = new SimpleDateFormat(DiscordSRV.config().getOptionalString("DateFormat").orElse("yyyy-MM-dd"), locale);
+        consoleTimeFormat = new SimpleDateFormat(DiscordSRV.config().getOptionalString("DiscordConsoleChannelTimestampFormat").orElse("EEE HH:mm:ss"), locale);
 
         String timezone = DiscordSRV.config().getOptionalString("Timezone").orElse("default");
         zone = timezone.equalsIgnoreCase("default") ? TimeZone.getDefault() : TimeZone.getTimeZone(timezone);
         timestampFormat.setTimeZone(zone);
         dateFormat.setTimeZone(zone);
         consoleTimeFormat.setTimeZone(zone);
+    }
+
+    private static Locale getLocaleFromConfig() {
+        String dateTimeLocale = DiscordSRV.config().getOptionalString("DateTimeLocale").orElse("en-US");
+        String[] codes = dateTimeLocale.split("-");
+        if (codes.length == 2) {
+            Locale tryLocale = new Locale(codes[0], codes[1]);
+            for (Locale l : Locale.getAvailableLocales()) {
+                if (tryLocale.equals(l)) {
+                    return tryLocale;
+                }
+            }
+        }
+        return new Locale("en", "US");
     }
 
     public static String format(String format) {
