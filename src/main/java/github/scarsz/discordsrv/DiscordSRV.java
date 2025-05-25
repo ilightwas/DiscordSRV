@@ -2177,6 +2177,28 @@ public class DiscordSRV extends JavaPlugin {
         );
         if (messageFormat.getFields() != null) messageFormat.getFields().forEach(field ->
                 embedBuilder.addField(translator.apply(field.getName(), true), translator.apply(field.getValue(), true), field.isInline()));
+
+        if (messageFormat.getEmbedColorExp() != null) {
+            String embedColor = Optional.of(messageFormat.getEmbedColorExp())
+                    .map(expression -> translator.apply(expression, false)).filter(StringUtils::isNotBlank)
+                    .orElse(null);
+            if (embedColor != null) {
+                if (!embedColor.startsWith("#"))
+                    embedColor = "#" + embedColor;
+                if (embedColor.length() == 7) {
+                    try {
+                        messageFormat.setColorRaw(
+                                Integer.valueOf(embedColor.substring(1, 7), 16));
+                    } catch (NumberFormatException ex) {
+                        DiscordSRV.debug("Failed to parse color to an int: " + embedColor);
+                    }
+                } else
+                    DiscordSRV.debug("Invalid color hex: " + embedColor + " for embed");
+            } else
+                DiscordSRV.debug(
+                        "Could not get a value with expression -> \"" + messageFormat.getEmbedColorExp()
+                                + "\"");
+        }
         embedBuilder.setColor(messageFormat.getColorRaw());
         embedBuilder.setTimestamp(messageFormat.getTimestamp());
         if (!embedBuilder.isEmpty()) messageBuilder.setEmbeds(embedBuilder.build());

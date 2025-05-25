@@ -50,6 +50,7 @@ public class MessageFormat {
     private String footerIconUrl;
     private Instant timestamp;
     private int colorRaw = -1;
+    private String embedColorExp;
     private List<MessageEmbed.Field> fields;
 
     // Webhook capabilities

@@ -59,13 +59,17 @@ public class MessageFormatResolver {
             Optional<String> hexColor = config.getOptionalString(key + ".Embed.Color");
             if (hexColor.isPresent()) {
                 String hex = hexColor.get().trim();
-                if (!hex.startsWith("#")) hex = "#" + hex;
-                if (hex.length() == 7) {
-                    messageFormat.setColorRaw(
-                            Integer.valueOf(hex.substring(1, 7), 16)
-                    );
+                if (hex.startsWith("$")) {
+                    messageFormat.setEmbedColorExp(hex);
                 } else {
-                    DiscordSRV.debug("Invalid color hex: " + hex + " (in " + key + ".Embed.Color)");
+                    if (!hex.startsWith("#"))
+                        hex = "#" + hex;
+                    if (hex.length() == 7) {
+                        messageFormat.setColorRaw(
+                                Integer.valueOf(hex.substring(1, 7), 16));
+                    } else {
+                        DiscordSRV.debug("Invalid color hex: " + hex + " (in " + key + ".Embed.Color)");
+                    }
                 }
             } else {
                 config.getOptionalInt(key + ".Embed.Color").ifPresent(messageFormat::setColorRaw);
