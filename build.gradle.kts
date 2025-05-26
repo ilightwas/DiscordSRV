@@ -320,3 +320,42 @@ idea {
         }
     }
 }
+
+
+tasks.register("sshcp") {
+    group = "deployment"
+    description = "Copy the built JAR to a selected remote server defined in .env"
+
+    val envFile = file(".env")
+    if (!envFile.exists()) throw GradleException(".env file not found!")
+
+    val env = Properties().apply {
+        envFile.forEachLine {
+            val (key, value) = it.trim().split("=", limit = 2)
+            setProperty(key.trim(), value.trim())
+        }
+    }
+
+    val jar = file("${buildDir}/libs/${project.name}-${project.version}.jar")
+    if (!jar.exists()) throw GradleException("JAR file not found at ${jar.path}. Run 'build' first.")
+
+    doLast {
+        val target = project.findProperty("to")?.toString()
+            ?: throw GradleException("Please specify the target with -Pto=")
+        val remotePath = env.getProperty(target)
+            ?: throw GradleException("Target '$target' not found in .env")
+        val remoteAlias = env.getProperty("sshalias")
+            ?: throw GradleException("Target sshalias not found in .env")
+
+        println("Deploying ${jar.name} to $remoteAlias:$remotePath")
+        val result = exec {
+            commandLine("scp", jar.absolutePath, "$remoteAlias:$remotePath")
+        }
+
+        if (result.exitValue != 0) {
+            throw GradleException("SCP failed with exit code ${result.exitValue}")
+        } else {
+            println("✅ Copied successfully!")
+        }
+    }
+}
