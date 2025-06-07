@@ -111,6 +111,12 @@ public class NetworkJoinLeaveListener implements Listener, PluginMessageListener
             return;
         }
 
+        ByteArrayDataInput bIn = ByteStreams.newDataInput(message);
+        ProxyEvent e = ProxyEvent.fromOpcode(bIn.readByte());
+        if(e != ProxyEvent.JOIN && e != ProxyEvent.QUIT) {
+            return;
+        }
+
         SchedulerUtil.runTaskAsynchronously(DiscordSRV.getPlugin(), () -> {
             ProxySRV.EventData data = new ProxySRV.EventData();
             try {
