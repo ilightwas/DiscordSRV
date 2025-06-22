@@ -1919,15 +1919,16 @@ public class DiscordSRV extends JavaPlugin {
     public void sendJoinMessage(Player player, String joinMessage) {
         if (player == null) throw new IllegalArgumentException("player cannot be null");
 
-        MessageFormat messageFormat = player.hasPlayedBefore()
-                ? getMessageFromConfiguration("MinecraftPlayerJoinMessage")
-                : getMessageFromConfiguration("MinecraftPlayerFirstJoinMessage");
+        boolean firstJoin = !player.hasPlayedBefore();
+        MessageFormat messageFormat = firstJoin
+                ? getMessageFromConfiguration("MinecraftPlayerFirstJoinMessage")
+                : getMessageFromConfiguration("MinecraftPlayerJoinMessage");
         if (messageFormat == null || !messageFormat.isAnyContent()) {
             debug("Not sending join message due to it being disabled");
             return;
         }
 
-        TextChannel textChannel = getOptionalTextChannel("join");
+        TextChannel textChannel = firstJoin ? getOptionalTextChannel("firstjoin") : getOptionalTextChannel("join");
         if (textChannel == null) {
             DiscordSRV.debug("Not sending join message, text channel is null");
             return;
